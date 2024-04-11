@@ -168,6 +168,22 @@ def generate_data_bert(data_items,foldername,split_name,label_dict,id,features,a
     np.save(path,crowd_layer)
 
 
+def generate_sentence_embedding_only(data_items_features,foldername,split_name):
+    data_items_index = pd.unique(data_items_features['Mindex'])
+
+    data_items_embed,embeddings = sentence_embedding(data_items_features,data_items_index)
+    # path = foldername + "/" + id + "_"+split_name+"_IE.csv"
+    # data_items_embed.to_csv(path,index=False)
+    
+    X = np.asarray(embeddings)
+
+    create_folder(foldername+"/bert_embeddings")
+    path = foldername + "/bert_embeddings/" + "X_"+split_name+".npy"
+    np.save(path,X)
+    # path = foldername + "/" + "Xi_"+split_name+".npy"
+    # data_items_embed_Xi = data_items_embed.to_numpy()
+    # np.save(path,data_items_embed_Xi)
+
 def convert_labels_per_group(data_items,no_classes,grouping_category):
     encoded = []
     unique_data_items = pd.unique(data_items[grouping_category])
