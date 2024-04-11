@@ -4,7 +4,7 @@ from collections import Counter
 import json
 import os
 import numpy as np
-from helper_functions import sentence_embedding, convert_data_pldl_experiments, generate_data_bert, save_to_json, create_folder, move_disco_embed_to_co
+from helper_functions import sentence_embedding, convert_data_pldl_experiments, generate_data_bert, save_to_json, create_folder, generate_sentence_embedding_only,move_disco_embed_to_co
 import sys
 
 from tqdm import tqdm
@@ -47,19 +47,27 @@ def main():
     ###################################
     # dialogue_id and response_id in the dataset
     # dfs_combine = dfs_combine.rename(columns = {"rater_id":"annotator_id"})
-    # dfs_combine = dfs_combine.rename(columns = {"item_id":"comment_id"})
     ###################################
     dfs_combine = pd.read_csv(raw_input_file)
 
     dfs_combine.drop_duplicates(inplace=True)
+    # The line `# dfs_combine = dfs_combine.rename(columns = {"item_id":"comment_id"})` is a
+    # commented-out line in the code. It appears to be a potential operation to rename a column in the
+    # DataFrame `dfs_combine` from "item_id" to "comment_id". However, since it is commented out with
+    # a `#` at the beginning, it is not currently being executed as part of the code.
+    dfs_combine = dfs_combine.rename(columns = {"query":"message"})
 
-    dfs_combine = process_prompts(dfs_combine)
+    # dfs_combine = process_prompts(dfs_combine)
 
     label_dict = {index: safety_label[index] for index in range(0, len(safety_label))}
 
     dfs_combine['label'] = dfs_combine['safety_label'].astype('category')
     dfs_combine['label_vector'] = dfs_combine['label'].cat.codes
     cats = dfs_combine.label.astype('category')
+
+    import pdb
+    dfs_combine['Mindex'] = dfs_combine.index
+    dfs_combine['comment_id'] = dfs_combine['Mindex']
 
     # dfs_combine["comment_id"] = range(len(dfs_combine))
 
@@ -89,7 +97,7 @@ def main():
     dfs_test = dfs_combine[dfs_combine.isin(test_items)]
     path = foldername1 + "/" + _id + "_test.json"
     dfs_test.to_json(path, orient='split', index=False)
-
+    pdb.set_trace()
     # dfs_combine.reset_index(drop=True, inplace=True)
     # annotators_parsed.reset_index(drop=True, inplace=True)
     # dfs_combine = pd.concat([dfs_combine, annotators_parsed], axis=1)
@@ -98,21 +106,34 @@ def main():
     # annotators_parsed.reset_index(drop=True, inplace=True)
     # dfs_combine = pd.concat([dfs_combine, annotators_parsed], axis=1)
 
-    path = foldername1 + "/" + _id + "_annotations.json"
-    ds_df = dfs_combine
-    ds_df.to_json(path, orient='split')
+    # path = foldername1 + "/" + _id + "_annotations.json"
+    # ds_df = dfs_combine
+    # ds_df.to_json(path, orient='split')
 
-    # dfs_dev = dfs_combine[dfs_combine.isin(dev_items)]
-    # path = foldername3 + "/" + _id + "_dev.json"
-    # convert_data_pldl_experiments(dfs_dev, safety_label, 'Mindex', path)
-    #
-    # dfs_train = dfs_combine[dfs_combine.isin(train_items)]
-    # path = foldername3 + "/" + _id + "_train.json"
-    # convert_data_pldl_experiments(dfs_train, safety_label, 'Mindex', path)
-    #
-    # dfs_test = dfs_combine[dfs_combine.isin(test_items)]
-    # path = foldername3 + "/" + _id + "_test.json"
-    # convert_data_pldl_experiments(dfs_test, safety_label, 'Mindex', path)
+    # Comments Cyril made on the code
+    test_items = test_items.head(1000)
+    path = foldername3 + "/" + _id + "_test.json"
+    convert_data_pldl_experiments(test_items, safety_label, 'Mindex', path)
+    generate_sentence_embedding_only(test_items,foldername3,"test")
+
+
+
+    # end changes from Cyril
+
+
+
+
+    dfs_dev = dfs_combine[dfs_combine.isin(dev_items)]
+    path = foldername3 + "/" + _id + "_dev.json"
+    convert_data_pldl_experiments(dfs_dev, safety_label, 'Mindex', path)
+    
+    dfs_train = dfs_combine[dfs_combine.isin(train_items)]
+    path = foldername3 + "/" + _id + "_train.json"
+    convert_data_pldl_experiments(train_items, safety_label, 'Mindex', path)
+    
+    dfs_test = dfs_combine[dfs_combine.isin(test_items)]
+    path = foldername3 + "/" + _id + "_test.json"
+    convert_data_pldl_experiments(dfs_test, safety_label, 'Mindex', path)
 
     X_train = pd.unique(dfs_train['query'])
     X_dev = pd.unique(dfs_dev['query'])
@@ -258,5 +279,3 @@ def csv_read(csvLocation,query,rots,safety_label,safety_annotations,safety_annot
 
 if __name__ == "__main__":
     main()
-
-
